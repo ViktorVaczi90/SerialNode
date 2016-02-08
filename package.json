@@ -1,17 +1,28 @@
 {
   "name": "serialnode",
   "version": "1.0.0",
-  "description": "Serial Node Pina",
-  "main": "index.js",
+  "description": "A node.js app for interacting with embedded devices on serial port.",
+  "main": "gulpfile.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "gulp": "gulp",
+    "start": "npm run gulp"
   },
   "keywords": [
-    "pina"
+    "serialport"
   ],
-  "author": "pina",
+  "author": "Viktor and Balázs",
   "license": "ISC",
   "dependencies": {
     "serialport": "^2.0.6"
+  },
+  "devDependencies": {
+    "babel": "^5.8.23",
+    "dev": "^0.1.3",
+    "gulp-babel": "^5.2.1",
+    "gulp-browserify": "^0.5.1",
+    "gulp-develop-server": "^0.4.3",
+    "gulp-plumber": "^1.0.1",
+    "tern-gulp": "^0.2.0"
   }
 }
