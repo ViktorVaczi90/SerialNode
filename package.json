@@ -10,5 +10,8 @@
     "pina"
   ],
   "author": "pina",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "serialport": "^2.0.6"
+  }
 }
