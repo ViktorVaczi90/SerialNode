@@ -1,0 +1,14 @@
+{
+  "name": "serialnode",
+  "version": "1.0.0",
+  "description": "Serial Node Pina",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "pina"
+  ],
+  "author": "pina",
+  "license": "ISC"
+}
