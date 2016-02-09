@@ -5,27 +5,26 @@ var gulp  = require('gulp'),
     server = require('gulp-develop-server'),
     plumber = require('gulp-plumber');
 
-var sources = {
-    app : "src/*.js"
+var config = {
+    sourceDir : "src/*.js",
+    app : "build/app.js"
 };
-
 
 //building the server
 gulp.task('build_serialnode', function(){
-        return gulp.src(sources.app)
+        return gulp.src(config.sourceDir)
              .pipe(plumber())
              .pipe(babel())
              .pipe(gulp.dest('build/'));
 });
 
-
 gulp.task('default', ['build_serialnode'], function () {
   "use strict";
 
   // starting the server when everything is done
-  server.listen( { path: 'build/app.js' } );
+  server.listen( { path: config.app } );
 
   // watching files for changes
-  gulp.watch( [sources.app], ['build_serialnode', server.restart]);
+  gulp.watch( ["src/promiseTest.js"], ["default"]);
 
 });
