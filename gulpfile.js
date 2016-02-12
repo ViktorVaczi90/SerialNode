@@ -25,6 +25,6 @@ gulp.task('default', ['build_serialnode'], function () {
   server.listen( { path: config.app } );
 
   // watching files for changes
-  gulp.watch( ["src/promiseTest.js"], ["default"]);
+  gulp.watch( ["src/app.js"], ["default"]);
 
 });
