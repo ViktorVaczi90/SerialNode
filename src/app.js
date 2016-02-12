@@ -13,10 +13,12 @@ var sp = new SerialPort(config.port, {
     baudrate: config.baudrate
 });
 
+/* Setting up the root node*/
 
 let setup = new Promise((resolve, reject) => {
 
-    /* Opening the serial port */
+    /* Getting the hardware address */
+
     sp.open((err)=> {
         if (err) console.log(err);
         else {
@@ -43,41 +45,79 @@ let setup = new Promise((resolve, reject) => {
     })
 }).then((hardwareAddr) => {
 
-        /* Setting the hardware address */
+    /* Setting the new hardware address */
 
-        return new Promise((resolve, reject) => {
-            sp.open((err)=> {
-                if (err) console.log(err);
-                else {
-                    console.log("Opened slot: ", config);
-                    let length = hardwareAddr.address.length;
-                    hardwareAddr.id = hardwareAddr.address.substring(length - 2, length);
-                    console.log("Hardware addr is set to ", hardwareAddr.id);
+    return new Promise((resolve, reject) => {
+        sp.open((err)=> {
+            if (err) console.log(err);
+            else {
+                console.log("Opened slot: ", config);
+                let length = hardwareAddr.address.length;
+                hardwareAddr.id = hardwareAddr.address.substring(length - 2, length);
+                console.log("Hardware addr is set to ", hardwareAddr.id);
 
-                    let output = "ifconfig 7 set addr " + hardwareAddr.id + "\n";
+                let output = "ifconfig 7 set addr " + hardwareAddr.id + "\n";
 
-                    sp.write(output, (err, res) => {
-                        if (err) {
-                            console.log(err);
-                        }
-                        else {
-                            sp.on("data", function (data) {
-                                let line = data.toString("utf8");
+                sp.write(output, (err, res) => {
+                    if (err) {
+                        console.log(err);
+                    }
+                    else {
+                        sp.on("data", function (data) {
+                            let line = data.toString("utf8");
 
-                                if (line.match(/success: set \(short\) address/)) {
-                                    sp.close(() => {
-                                        console.log(line);
-                                        resolve(hardwareAddr);
-                                    })
-                                }
-                            });
-                        }
-                    });
-                }
+                            if (line.match(/success: set \(short\) address/)) {
+                                sp.close(() => {
+                                    console.log(line);
+                                    resolve(hardwareAddr);
+                                })
+                            }
+                        });
+                    }
+                });
+            }
 
-            })
-        });
+        })
+    });
 
-    }).then((hardwareAddr) => {
-        console.log(hardwareAddr)
+}).then((hardwareAddr) => {
+
+    /* Setting the rpl root address */
+
+    return new Promise( (resolve, reject) => {
+        sp.open((err)=> {
+            if (err) console.log(err);
+            else {
+                console.log("Opened slot: ", config);
+
+                let output = "ifconfig 7 add 2001:db8::1\n";
+
+                sp.write(output, (err, res) => {
+                    if (err) {
+                        console.log(err);
+                    }
+                    else {
+                        sp.on("data", function (data) {
+                            let line = data.toString("utf8");
+
+                            //TODO: the root node's address is hard coded now
+                            if (line.match(/success: added/)) {
+                                sp.close( () => {
+                                    console.log(line.trim());
+                                    hardwareAddr.rootAddress = "2001:db8::1";
+                                    resolve(hardwareAddr);
+                                })
+                            }
+
+                        });
+                    }
+                });
+            }
+
+        })
     })
+});
+
+let setDevice = function () {
+
+};
