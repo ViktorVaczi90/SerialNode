@@ -19,7 +19,9 @@ sp.open((err) => {
 
         /* Starting the root configuration */
 
-        sendCommand(sp, "ifconfig").then( (data) => {
+        sendCommand(sp, "reboot").then(() => {
+            return sendCommand(sp, "ifconfig")
+        }).then( (data) => {
 
             /* Extracting the hardware address from the inet6 address */
 
