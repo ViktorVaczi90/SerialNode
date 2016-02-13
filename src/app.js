@@ -66,21 +66,38 @@ sp.open((err) => {
     }
 });
 
+/**
+ * A function that executes a RIOT shell commaand and returns the results of the command.
+ * @param {Object} serialPort - A serialnode object.
+ * @param {string} command - A valid RIOT os shell command
+ * @returns {*|Promise|P} A promise for array of utf-8 strings that was converted from the buffer's data.
+ */
 let sendCommand = function (serialPort, command) {
 
-    // adding a \n to the end of the command
+    /* adding a \n to the end of the command */
     if (command.endsWith('\n')  == false) command = command + "\n";
 
     return new Promise( (resolve, reject) => {
+
+        /* Writing the command to the serial */
         serialPort.write(command, (err, res) => {
             if (err) console.log(err);
             else {
+
+                /* Initiating a buffer that will hold the data that's being streamed from the binary buffer */
                 let buffer = [];
+
+                /* Listening for the data event, and reading from the binary buffer
+                 and filling up the string buffer until the end of the message */
                 serialPort.on("data", (data)=> {
+
+                    /* Converting the binary data to string and adding it to the string buffer */
                     buffer.push(data.toString("utf8"));
+
+                    /* If the message is over, return the buffer  */
                     if (data.toString("utf8").match(">")) {
                         serialPort.removeAllListeners();
-                        let result = buffer.join(' ')
+                        let result = buffer.join(' ');
                         console.log(result);
                         resolve(result.split('\n').map((item)=>{ return item.trim() }));
                     }
