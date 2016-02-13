@@ -19,9 +19,7 @@ sp.open((err) => {
 
         /* Starting the root configuration */
 
-        sendCommand(sp, "ifconfig").then((data)=>{
-            return data;
-        }).then( (data) => {
+        sendCommand(sp, "ifconfig").then( (data) => {
 
             /* Extracting the hardware address from the inet6 address */
 
@@ -42,20 +40,17 @@ sp.open((err) => {
         }).then(()=>{
 
             /* Setting the rpl root adress */
-
-            return sendCommand(sp, "ifconfig 7 add 2001:db8::1");
+            return sendCommand(sp, "ifconfig 7 add 2001:db8::1")
 
         }).then(() => {
 
             /* Initiating the rpl */
+           return sendCommand(sp, "rpl init 7")
 
-            let rplInitiated = false;
+        }).then(() => {
 
-            while (rplInitiated == false) {
-                setTimeout(()=>{
-                    sendCommand(sp,)
-                }, 1000)
-            }
+           return sendCommand(sp, "rpl root 1 2001:db8::1")
+
         }).then( (data) => {
 
             /* Configuration completed closing the connection */
@@ -108,3 +103,18 @@ let sendCommand = function (serialPort, command) {
 };
 
 
+let initiateRpl = function (serialPort) {
+
+
+};
+
+//let initiateRpl = function (serialPort) {
+//
+//    return new Promise((resolve, reject) => {
+//        sendCommand(serialPort, "rpl init 7").then((answer) => {
+//            sendCommand(serialPort, "rpl root 1 2001:db8::1").then( (answer) => {
+//                resolve(answer);
+//            })
+//        })
+//    });
+//};
