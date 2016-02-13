@@ -3,13 +3,12 @@ let config = {
     baudrate: 115200
 };
 
-/*Importing the serialnode module*/
+/* Importing the serialnode module */
 var serialport = require("serialport");
 var SerialPort = serialport.SerialPort; // localize object constructor
 
 /*Initializing a serialnode object with the parameters*/
 var sp = new SerialPort(config.port, {
-    //parser: serialport.parsers.readline("\n"),
     baudrate: config.baudrate
 });
 
@@ -17,114 +16,78 @@ var sp = new SerialPort(config.port, {
 sp.open((err) => {
     if (err) console.log("Error initiating the connection");
     else {
-        sp.write("ifconfig\n", (err, res) => {
-            if (err) console.log(err);
-            else {
-                let buffer = [];
-                sp.on("data", (data)=> {
-                    buffer.push(data.toString("utf8"));
-                    if (data.toString("utf8").match(">")) {
-                        sp.removeAllListeners();
-                        console.log(buffer.join(' '));
-                    }
-                })
+
+        /* Starting the root configuration */
+
+        sendCommand(sp, "ifconfig").then((data)=>{
+            return data;
+        }).then( (data) => {
+
+            /* Extracting the hardware address from the inet6 address */
+
+            for (let item of data){
+                let match = item.match(/(([a-zA-Z0-9]{4})::)([a-zA-Z0-9]{4}:){3}[a-zA-Z0-9]{4}/);
+                if (match != null) {
+                    // the last 2 numbers of the address is the hardware address
+                    return match[0].slice(-2);
+                }
             }
+
+        }).then( (hardwareAddress) => {
+
+            /* Setting the hardware address to the correct value */
+
+            return sendCommand(sp, "ifconfig 7 set addr " + hardwareAddress);
+
+        }).then(()=>{
+
+            /* Setting the rpl root adress */
+
+            return sendCommand(sp, "ifconfig 7 add 2001:db8::1");
+
+        }).then(() => {
+
+            /* Initiating the rpl */
+
+            let rplInitiated = false;
+
+            while (rplInitiated == false) {
+                setTimeout(()=>{
+                    sendCommand(sp,)
+                }, 1000)
+            }
+        }).then( (data) => {
+
+            /* Configuration completed closing the connection */
+            sp.close( () => {
+                console.log("Connection closed!")
+            })
         })
     }
 });
 
+let sendCommand = function (serialPort, command) {
 
-//let getHardwareAddress = function (serialPort) {
-//
-//    let id = null;
-//    let logged = false;
-//    let received = [];
-//
-//    return new Promise((resolve, reject) => {
-//        sp.write("ifconfig\n", function (err, results) {
-//            if (err) console.log('err ' + err);
-//            sp.on('data', function (data) {
-//                let line = data.toString("utf8");
-//                received.push(line);
-//                let regexMatch = line.match(/(([a-zA-Z0-9]{4})::)([a-zA-Z0-9]{4}:){3}[a-zA-Z0-9]{4}/);
-//                if (regexMatch != null && id == null && logged == false) {
-//                    id = regexMatch[0];
-//                    console.log("The address of the device is: ", id);
-//                    logged = true;
-//                } else if (id != null && line.match(/>/) != null) {
-//                    serialPort.removeAllListeners();
-//                    resolve(id);
-//                }
-//            });
-//        });
-//    })
-//};
-//
-//let sendCommand = function (serialPort, command, until) {
-//
-//    let matched = false;
-//
-//    return new Promise((resolve, reject) => {
-//        serialPort.write(command, (err, results) => {
-//            if (err) reject(err);
-//            else {
-//                serialPort.on('data', (data) => {
-//                    let line = data.toString("utf8").trim();
-//
-//                    if (matched == false && line.match(until) != null) {
-//                        console.log(line);
-//                        matched = true;
-//                    }
-//                    /* When the message is finished remove the event listener */
-//                    else if (matched == true && line.match(/>/)) {
-//                        serialPort.removeAllListeners();
-//                        resolve(true);
-//                    }
-//                })
-//            }
-//        })
-//    })
-//};
+    // adding a \n to the end of the command
+    if (command.endsWith('\n')  == false) command = command + "\n";
 
+    return new Promise( (resolve, reject) => {
+        serialPort.write(command, (err, res) => {
+            if (err) console.log(err);
+            else {
+                let buffer = [];
+                serialPort.on("data", (data)=> {
+                    buffer.push(data.toString("utf8"));
+                    if (data.toString("utf8").match(">")) {
+                        serialPort.removeAllListeners();
+                        let result = buffer.join(' ')
+                        console.log(result);
+                        resolve(result.split('\n').map((item)=>{ return item.trim() }));
+                    }
+                })
+            }
+        })
+    });
+};
 
-//-------------------
-
-///**
-// * This function reads a complete message from the serial port.
-// * @param {Object} serialPort - An opened serialport-2 object
-// * @returns {*|Promise|P} An array of strings that holds the data read from the buffer.
-// */
-//let readFromSerial = function (serialPort) {
-//    return new Promise((resolve, reject) => {
-//
-//        let buffer = [];
-//
-//        serialPort.on("data", (data)=> {
-//            buffer.push(data.toString("utf8"));
-//            if (data.toString("utf8").match(">")) {
-//                serialPort.removeAllListeners();
-//                resolve(buffer)
-//            }
-//        })
-//    })
-//};
-//
-///**
-// * A callback that handles the array of lines that was created from the stream buffer.
-// * @callback writeToSerialCallback
-// * @param {*|Promise|P} data - An array of strings that holds the data read from the buffer.
-// */
-//
-///**
-// * This function writes to the serialport and waits for the result.
-// * @param {Object} serialPort - An opened serialport-2 object
-// * @param {string} command - Serial command
-// * @param {writeToSerialCallback} success - A callback that handles the response came from the serial
-// */
-//let writeToSerial = function (serialPort, command, success) {
-//    serialPort.write(command, (err, res) => {
-//        if (err) console.log(err);
-//        else success(readFromSerial(serialPort))
-//    })
-//};
 
