@@ -24,6 +24,7 @@
     "gulp-browserify": "^0.5.1",
     "gulp-develop-server": "^0.4.3",
     "gulp-plumber": "^1.0.1",
+    "sleep": "^3.0.1",
     "tern-gulp": "^0.2.0"
   }
 }
