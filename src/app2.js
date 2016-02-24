@@ -49,10 +49,9 @@ sp.open((err) => {
         }).then(() => {
 
             /* Initiating the rpl */
-            let rpl_prom = sendCommand(sp, "rpl init 7");
-
-            return rpl_prom.then(() => {
-                return sendCommand(sp, "rpl root 1 2001:db8::1")
+            return sendCommand(sp, "rpl init 7").then(() => {
+                let returnedData = sendCommand(sp, "rpl root 1 2001:db8::1");
+                return returnedData;
             })
 
         }).then((data) => {
@@ -110,19 +109,15 @@ let sendCommand = function (serialPort, command) {
     });
 };
 
+function initRPL(serialPort) {
 
-let initiateRpl = function (serialPort) {
+        let initPromise = sendCommand(sp, "rpl init 7");
 
+        return initPromise.then(()=>{
+            sendCommand(sp, "rpl root 1 2001:db8::1");
+        }).then((res)=> {
+            console.log("Response is ",res)
+            return true
+        })
 
-};
-
-//let initiateRpl = function (serialPort) {
-//
-//    return new Promise((resolve, reject) => {
-//        sendCommand(serialPort, "rpl init 7").then((answer) => {
-//            sendCommand(serialPort, "rpl root 1 2001:db8::1").then( (answer) => {
-//                resolve(answer);
-//            })
-//        })
-//    });
-//};
+}
