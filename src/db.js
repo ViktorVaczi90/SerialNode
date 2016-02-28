@@ -39,19 +39,25 @@ let Node = mongoose.model("Node", nodeSchema);
 
 db.insertNode = function (nodeObject) {
     /* Check whether the node is already in the db */
-    Node.find({address: nodeObject.address}).exec(
+    let queryResult = Node.find({address: nodeObject.address}).exec(
         (err, res) => {
-            if (err) console.log(err); // TODO: handle empty
+            if (err) console.log(err);
             else return res
         }
-    ).then(()=>{
-            let node = new Node(nodeObject);
+    );
+    queryResult.then((dbNode)=>{
+            if (dbNode.length === 0) {
+                let node = new Node(nodeObject);
 
-            node.save((err, node)=>{
-                if (err) console.log(err);
-                else {console.log("Inserted",node._id)}
-            })
-        });
+                node.save((err, node)=>{
+                    if (err) console.log(err);
+                    else {console.log("Inserted",node._id)}
+                });
+                return dbNode
+            } else {
+
+            }
+    });
 
     /* TODO: add a callback or return */
 };
@@ -80,8 +86,12 @@ db.getDifference = function (addressList) {
     });
 };
 
-/*TODO: doc, error handling, validating*/
-db.getNode = function (queryObj){
+/**
+ * This function returns nodes from the db based on the queryObject.
+ * @param {Object} queryObj - A valid MongoDB query object
+ * @returns {Promise|P|*} - A promise that holds the nodes that fulfill the query or if nothing can be fetched from the db it contains an empty array.
+ */
+db.getNodes = function (queryObj){
     return new Promise((resolve, reject)=>{
         Node.find(queryObj).exec((err, res)=>{
             if (err) reject(err);

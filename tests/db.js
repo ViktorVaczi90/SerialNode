@@ -37,10 +37,11 @@ function makeid () {
     return text;
 }
 
-db.getNode({address : "p0Fh7b3PWiMJL2dH"}).then( (node)=>{
-   console.log("Required node: ", node)
-});
 
-db.getNode({address : "Wrong node"}).then( (node)=>{
-    console.log("Wrong node: ", node)
-});
+//db.getNode({address : "p0Fh7b3PWiMJL2dH"}).then( (node)=>{
+//   console.log("Required node: ", node)
+//});
+//
+//db.getNode({address : "Wrong node"}).then( (node)=>{
+//    console.log("Wrong node: ", node)
+//});
