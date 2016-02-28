@@ -1,4 +1,8 @@
+"use strict";
 var ifconfig_addr;
+const SerialHandler = require("./serial.js");
+const HandleSerial = SerialHandler.handleSerial;
+const CloseSerial = SerialHandler.close;
 let buildstring = "SERVER";//"SETUP"
 /* Importing state maschine */
 let i = 0;
@@ -28,16 +32,15 @@ let cnt = 0;
 
 /*Variables for the database and state machine: */
 let list_of_nodes = [];
-
+/*
 sp.on("data", (data)=> {
-
-    /* Converting the binary data to string and adding it to the string buffer */
+     //Converting the binary data to string and adding it to the string buffer
     buffer.push(data.toString("utf8"));
 
-    /* If the message is over, return the buffer  */
+     //If the message is over, return the buffer
     if (data.toString("utf8").match(">")) {
-        /*clearInterval(enter_timeout);
-        enter_timeout = setInterval(enterTimeout, 1000);*/
+        clearInterval(enter_timeout);
+        enter_timeout = setInterval(enterTimeout, 1000);
         //serialPort.removeAllListeners();
         let result = buffer.join('');
         //console.log(result);
@@ -66,7 +69,7 @@ sp.on("data", (data)=> {
             stateMachine.action(Action.NEW_FIB_ITEM);
             buffer = [];
         }
-        /*if (result.match(/Success: send 34 byte/)|| result.match(/Destination                             Flags        Next Hop/)){
+        if (result.match(/Success: send 34 byte/)|| result.match(/Destination                             Flags        Next Hop/)){
             stateMachine.action(Action.TIMEOUT);
             buffer = [];
         }
@@ -75,16 +78,13 @@ sp.on("data", (data)=> {
             stateMachine.action(Action.TIMEOUT2);
             buffer = [];
 
-        }*/
+        }
 
     }
 });
 
-sp.open( () => {
-    // start
-    stateMachine.start();
-});
-var stateMachine = new sm();
+*/
+
 
 var State = {
     INTIAL: 'INTIAL',
@@ -150,13 +150,17 @@ var Action = {
 };
 var config = [
     {
-        //initial: true,
+        initial: true,
         name: State.INTIAL,
         transitions: [
             { action: Action.INITIATED, target: State.GETNETIF }
         ],
-        onEnter: function(state,data,action){
-            sp.write("reboot\n");
+        onEnter: function(state,data,action) {
+            HandleSerial("reboot\n", (resultString)=> {
+                if (resultString.match(/All up, running the shell now/)) {
+                    stateMachine.action(Action.INITIATED);
+                }
+            })
         }
     },
     {
@@ -165,7 +169,7 @@ var config = [
             { action: Action.INITIATED, target: State.GETNETIF }
         ],
         onEnter: function(state,data,action){
-            sp.write("reboot\n");
+            //sp.write("reboot\n");
         }
     },
     {
@@ -174,7 +178,7 @@ var config = [
             { action: Action.GOT_IPADDR, target: State.SETNETIF }
         ],
         onEnter: function(state,data,action){
-            sp.write("ifconfig\n");
+            SerialHandler.close();
         }
     },
     {
@@ -184,9 +188,9 @@ var config = [
         ]
         ,
         onEnter: function(state,data,action){
-            sp.write("ifconfig 7 del "+ifconfig_addr + "\n" +
+            /*sp.write("ifconfig 7 del "+ifconfig_addr + "\n" +
             "ifconfig 7 set addr 01\n"+
-            "ifconfig 7 add fe80::01\n");
+            "ifconfig 7 add fe80::01\n");*/
 
         }
     },
@@ -197,14 +201,14 @@ var config = [
         ]
         ,
         onEnter: function(state,data,action){
-            sp.write("ifconfig 7 add 2001:db8::1\n"+
+            /*sp.write("ifconfig 7 add 2001:db8::1\n"+
             "rpl init 7\n"+
-            "rpl root 1 2001:db8::1\n");
+            "rpl root 1 2001:db8::1\n");*/
         }
     },
 
     {
-        initial: true,// Only for debugging
+        //initial: true,// Only for debugging
         name: State.NEW_FIBROUTE,
         transitions: [
             {action: Action.NEW_FIB_ITEM, target: State.GET_SENSACT_LIST},
@@ -212,7 +216,7 @@ var config = [
         ]
         ,
         onEnter: function (state, data, action) {
-            sp.write("fibroute\n");
+           /* sp.write("fibroute\n");*/
         }
     },
     {
@@ -222,7 +226,7 @@ var config = [
         ]
         ,
         onEnter: function (state, data, action) {
-            sp.close();
+           /* sp.close();*/
         }
     },
     {
@@ -352,16 +356,15 @@ var config = [
         }
     }
 ];
-let enter_timeout;
-/*Write enter to the serial output in order to get back the shell prompt  This event should be called in every catched serial buffer like:
- clearInterval(enter_timeout,);
- enter_timeout = setInterval(enterTimeout, 1000);*/
-function enterTimeout(){sp.write("\n")};
+var stateMachine = new sm();
+// create multiple states with a config array
+SerialHandler.open(()=>{
+    stateMachine.start();
+})
+stateMachine.create(config);
 function Timeout(){stateMachine.action(Action.TIMEOUT);}
 function Timeout2(){stateMachine.action(Action.TIMEOUT2);}
 //setInterval(stateMachine.action(Action.TIMEOUT2), 1000);
-// create multiple states with a config array
-stateMachine.create(config);
 
 // add listener for state change
 stateMachine.onChange.add(function(state, data, action) {

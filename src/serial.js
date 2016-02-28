@@ -12,9 +12,7 @@ let sp = new SerialPort(serconf.port, {
     baudrate: serconf.baudrate
 });
 
-sp.open();
-
-let HandleSerial = function (writeString, callback) {
+sp.handleSerial = function (writeString, callback) {
 
     sp.write(writeString);
 
@@ -37,4 +35,4 @@ let HandleSerial = function (writeString, callback) {
     });
 };
 
-module.exports = HandleSerial;
+module.exports = sp;
