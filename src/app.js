@@ -6,6 +6,22 @@ const CloseSerial = SerialHandler.close;
 let buildstring = "SERVER";//"SETUP"
 /* Importing state maschine */
 let i = 0;
+let date = new Date();
+let curr_node = {
+    address: "",
+    error: false,
+    newDeviceRequest: true,
+    devices: [
+        {
+            dataType: 0,
+            available: true,
+            currentValues: [],
+            getRequestTimeout: date.setSeconds(1),
+            lastGetRequest: date.getDate(),
+            setRequest: true
+        }
+    ]
+}
 let leds =
     [   "fibroute \n",
         "sndpkt 2001:db8::2e00:2500:1257:3346 4 0 1 0 0 0 0 LED(red) 0 0\n",
@@ -32,60 +48,6 @@ let cnt = 0;
 
 /*Variables for the database and state machine: */
 let list_of_nodes = [];
-/*
-sp.on("data", (data)=> {
-     //Converting the binary data to string and adding it to the string buffer
-    buffer.push(data.toString("utf8"));
-
-     //If the message is over, return the buffer
-    if (data.toString("utf8").match(">")) {
-        clearInterval(enter_timeout);
-        enter_timeout = setInterval(enterTimeout, 1000);
-        //serialPort.removeAllListeners();
-        let result = buffer.join('');
-        //console.log(result);
-        if (result.match(/All up, running the shell now/)) {
-            stateMachine.action(Action.INITIATED);
-            buffer = [];
-        }
-        if (result.match(/inet6 addr: fe80::2e00:2500:1257:3346\/64  scope: local/)) {//TODO
-            ifconfig_addr = "fe80::2e00:2500:1257:3346";
-            stateMachine.action(Action.GOT_IPADDR);
-            buffer = [];
-        }
-        if (result.match(/success: added fe80::01\/64 to interface 7/)){
-            stateMachine.action(Action.SETNETIF_RDY);
-            buffer = [];
-        }
-        if (result.match(/successfully added a new RPL DODAG/)){
-            stateMachine.action(Action.DODAG_RDY);
-            buffer = [];
-        }
-        if (result.match(/Destination                             Flags        Next Hop                                Flags      Expires          Interface/))
-        {// result of fibroute
-
-            list_of_nodes = result.match(/\n([0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}::[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4})/g);//Get ips
-            console.log(list_of_nodes);
-            stateMachine.action(Action.NEW_FIB_ITEM);
-            buffer = [];
-        }
-        if (result.match(/Success: send 34 byte/)|| result.match(/Destination                             Flags        Next Hop/)){
-            stateMachine.action(Action.TIMEOUT);
-            buffer = [];
-        }
-        if (result.match(/msg         :/)){
-            clearTimeout(timeoutevent);
-            stateMachine.action(Action.TIMEOUT2);
-            buffer = [];
-
-        }
-
-    }
-});
-
-*/
-
-
 var State = {
     INTIAL: 'INTIAL',
     REBOOT: 'REBOOT',
@@ -150,7 +112,7 @@ var Action = {
 };
 var config = [
     {
-        initial: true,
+        //initial: true,
         name: State.INTIAL,
         transitions: [
             { action: Action.INITIATED, target: State.GETNETIF }
@@ -164,21 +126,17 @@ var config = [
         }
     },
     {
-        name: State.REBOOT,
-        transitions: [
-            { action: Action.INITIATED, target: State.GETNETIF }
-        ],
-        onEnter: function(state,data,action){
-            //sp.write("reboot\n");
-        }
-    },
-    {
         name: State.GETNETIF,
         transitions: [
             { action: Action.GOT_IPADDR, target: State.SETNETIF }
         ],
         onEnter: function(state,data,action){
-            SerialHandler.close();
+            HandleSerial("ifconfig\n", (resultString)=> {
+                if (resultString.match(/inet6 addr: fe80::2e00:2500:1257:3346\/64  scope: local/)) {//TODO
+                    ifconfig_addr = "fe80::2e00:2500:1257:3346";
+                    stateMachine.action(Action.GOT_IPADDR);
+                }
+            })
         }
     },
     {
@@ -188,10 +146,13 @@ var config = [
         ]
         ,
         onEnter: function(state,data,action){
-            /*sp.write("ifconfig 7 del "+ifconfig_addr + "\n" +
-            "ifconfig 7 set addr 01\n"+
-            "ifconfig 7 add fe80::01\n");*/
-
+            HandleSerial("ifconfig 7 del "+ifconfig_addr + "\n" +
+                "ifconfig 7 set addr 01\n"+
+                "ifconfig 7 add fe80::01\n",(resultString)=>{
+                if(resultString.match(/success: added fe80::01\/64 to interface 7/)){
+                    stateMachine.action(Action.SETNETIF_RDY);
+                }
+            })
         }
     },
     {
@@ -201,14 +162,18 @@ var config = [
         ]
         ,
         onEnter: function(state,data,action){
-            /*sp.write("ifconfig 7 add 2001:db8::1\n"+
-            "rpl init 7\n"+
-            "rpl root 1 2001:db8::1\n");*/
+            HandleSerial("ifconfig 7 add 2001:db8::1\n"+
+                "rpl init 7\n"+
+                "rpl root 1 2001:db8::1\n",(resultString)=>{
+                if(resultString.match(/successfully added a new RPL DODAG/)){
+                    stateMachine.action(Action.DODAG_RDY);
+                }
+            })
         }
     },
 
     {
-        //initial: true,// Only for debugging
+        initial: true,// Only for debugging
         name: State.NEW_FIBROUTE,
         transitions: [
             {action: Action.NEW_FIB_ITEM, target: State.GET_SENSACT_LIST},
@@ -216,7 +181,13 @@ var config = [
         ]
         ,
         onEnter: function (state, data, action) {
-           /* sp.write("fibroute\n");*/
+            HandleSerial("fibroute\n",(resultString)=>{
+                if(resultString.match(/Destination                             Flags        Next Hop                                Flags      Expires          Interface/)){
+                    list_of_nodes = resultString.match(/\n([0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}::[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4})/g);
+                    console.log(list_of_nodes);
+                    stateMachine.action(Action.NEW_FIB_ITEM);
+                }
+            })
         }
     },
     {
@@ -227,6 +198,7 @@ var config = [
         ,
         onEnter: function (state, data, action) {
            /* sp.close();*/
+            SerialHandler.close();
         }
     },
     {
