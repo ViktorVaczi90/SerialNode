@@ -74,9 +74,10 @@ sp.on("data", (data)=> {
         }
         if (result.match(/Destination                             Flags        Next Hop                                Flags      Expires          Interface/))
         {// result of fibroute
-            stateMachine.action(Action.NEW_FIB_ITEM);
+
             list_of_nodes = result.match(/\n([0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}::[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4})/g);//Get ips
             console.log(list_of_nodes);
+            stateMachine.action(Action.NEW_FIB_ITEM);
             buffer = [];
         }
         /*if (result.match(/Success: send 34 byte/)|| result.match(/Destination                             Flags        Next Hop/)){
