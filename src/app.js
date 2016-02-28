@@ -1,13 +1,3 @@
-"use strict"
-let serconf = {
-    port: "/dev/ttyUSB0",
-    baudrate: 115200
-};
-
-/* Importing the serialnode module */
-var serialport = require("serialport");
-var SerialPort = serialport.SerialPort; // localize object constructor
-var sleep = require('sleep');
 var ifconfig_addr;
 let buildstring = "SERVER";//"SETUP"
 /* Importing state maschine */
@@ -30,13 +20,9 @@ let timeoutevent;
 
 
 let sm = require("state-machine-js");
-/*Initializing a serialnode object with the parameters*/
-var sp = new SerialPort(serconf.port, {
-    baudrate: serconf.baudrate
-});
+
 let cnt = 0;
-/* Initiating a buffer that will hold the data that's being streamed from the binary buffer */
-let buffer = [];
+
 /* Listening for the data event, and reading from the binary buffer
  and filling up the string buffer until the end of the message */
 
