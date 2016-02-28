@@ -2,7 +2,6 @@
 
 /* Importing stuff and defining constants */
 const mongoose = require('mongoose');
-//-const ObjectID = mongoose.ObjectId; /* TODO: Remove if not needed */
 const Schema = mongoose.Schema;
 
 /* Establishing the connection to the db*/
@@ -36,30 +35,41 @@ let nodeSchema = new Schema({
 let Node = mongoose.model("Node", nodeSchema);
 
 
-
+/**
+ * This function inserts a node to the db. Before inserting the node it queries the db for it to forbid
+ * inserting a node multiple times.
+ * @param nodeObject
+ * @returns {Promise|boolean} - Returns true if the node was inserted to the db.
+ * Returns false when the node cannot be inserted to the db or an error happened.
+ * If an error happens it's logged to the console.
+ */
 db.insertNode = function (nodeObject) {
-    /* Check whether the node is already in the db */
+    /* Querying the node from the db */
     let queryResult = Node.find({address: nodeObject.address}).exec(
         (err, res) => {
             if (err) console.log(err);
             else return res
         }
     );
-    queryResult.then((dbNode)=>{
-            if (dbNode.length === 0) {
-                let node = new Node(nodeObject);
+    /* Inserting the node to the db*/
+    return queryResult.then((dbNode) => {
+        if (dbNode.length === 0) {
+            let node = new Node(nodeObject);
 
-                node.save((err, node)=>{
-                    if (err) console.log(err);
-                    else {console.log("Inserted",node._id)}
-                });
-                return dbNode
-            } else {
-
-            }
+            return node.save((err, node)=> {
+                if (err) {
+                    console.log(err);
+                    return false
+                }
+                else {
+                    console.log("Inserted", node._id);
+                    return true
+                }
+            });
+        } else {
+            return true
+        }
     });
-
-    /* TODO: add a callback or return */
 };
 
 /**
@@ -97,6 +107,18 @@ db.getNodes = function (queryObj){
             if (err) reject(err);
             else resolve(res)
         })
+    })
+};
+
+//TODO: remove this when testing is done
+db.dropDocuments = function (queryObj){
+    Node.remove(queryObj).exec((err, success)=>{
+        if (err) {
+            console.log(err);
+            return false
+        } else {
+            return true
+        }
     })
 };
 

@@ -37,6 +37,9 @@ function makeid () {
     return text;
 }
 
+db.dropDocuments({});
+
+generateNodes();
 
 //db.getNode({address : "p0Fh7b3PWiMJL2dH"}).then( (node)=>{
 //   console.log("Required node: ", node)
