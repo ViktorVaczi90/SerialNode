@@ -3,6 +3,7 @@ var ifconfig_addr;
 const SerialHandler = require("./serial.js");
 const HandleSerial = SerialHandler.handleSerial;
 const CloseSerial = SerialHandler.close;
+const db = require("./db.js");
 let buildstring = "SERVER";//"SETUP"
 /* Importing state maschine */
 let i = 0;
@@ -183,9 +184,14 @@ var config = [
         onEnter: function (state, data, action) {
             HandleSerial("fibroute\n",(resultString)=>{
                 if(resultString.match(/Destination                             Flags        Next Hop                                Flags      Expires          Interface/)){
-                    list_of_nodes = resultString.match(/\n([0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}::[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4})/g);
-                    console.log(list_of_nodes);
-                    stateMachine.action(Action.NEW_FIB_ITEM);
+                    list_of_nodes = resultString.match(/([0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}::[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4})/g);
+                    //list_of_nodes = db.getDifference(list_of_nodes); // getDiffrence is baaad TODO
+                    if(list_of_nodes.length) {
+                        curr_node.address = list_of_nodes.pop();
+                        stateMachine.action(Action.NEW_FIB_ITEM);
+                        cnt = 5;//TODO: TEMP
+                    } 
+                    else stateMachine.action(Action.NO_NEW_FIB_ITEM);
                 }
             })
         }
@@ -197,8 +203,27 @@ var config = [
         ]
         ,
         onEnter: function (state, data, action) {
-           /* sp.close();*/
-            SerialHandler.close();
+            HandleSerial("sndpkt" + " " +curr_node.address + " 0 0 0 0 0 0 0 0 0 " + ++cnt + "\n",(resultString)=>{
+                if(resultString.match(/msg         : 1/)){
+                    let device_cnt = Number(resultString.match(/cnt         : [0-9]*/)[0].match(/[0-9]*/));
+                    for (let i = 0; i < device_cnt ; i++)
+                    {
+                        curr_node.devices.push(        {
+                            dataType: 0,
+                            available: true,
+                            currentValues: [],
+                            getRequestTimeout: date.setSeconds(1),
+                            lastGetRequest: date.getDate(),
+                            setRequest: true
+                        });
+                    }
+                    stateMachine.action(Action.SENSACT_LIST_ACK);
+                }
+                else{
+                    console.log("BAD MSG IN GET_SENSACT_LIST! GOT STRING:\n"+ resultString);//TODO: ERROR HANDLING + IP ADDR
+                }
+            })
+
         }
     },
     {
@@ -208,7 +233,8 @@ var config = [
         ]
         ,
         onEnter: function (state, data, action) {
-
+            SerialHandler.close();
+            console.log("sasd");
         }
     },
     {
