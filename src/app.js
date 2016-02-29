@@ -13,14 +13,6 @@ let curr_node = {
     error: false,
     newDeviceRequest: true,
     devices: [
-        {
-            dataType: 0,
-            available: true,
-            currentValues: [],
-            getRequestTimeout: date.setSeconds(1),
-            lastGetRequest: date.getDate(),
-            setRequest: true
-        }
     ]
 }
 let leds =
@@ -43,7 +35,8 @@ let timeoutevent;
 let sm = require("state-machine-js");
 
 let cnt = 0;
-
+let pkt_cnt = 0;
+let device_cnt = 0;
 /* Listening for the data event, and reading from the binary buffer
  and filling up the string buffer until the end of the message */
 
@@ -123,7 +116,7 @@ var config = [
                 if (resultString.match(/All up, running the shell now/)) {
                     stateMachine.action(Action.INITIATED);
                 }
-            })
+            });
         }
     },
     {
@@ -137,7 +130,7 @@ var config = [
                     ifconfig_addr = "fe80::2e00:2500:1257:3346";
                     stateMachine.action(Action.GOT_IPADDR);
                 }
-            })
+            });
         }
     },
     {
@@ -153,7 +146,7 @@ var config = [
                 if(resultString.match(/success: added fe80::01\/64 to interface 7/)){
                     stateMachine.action(Action.SETNETIF_RDY);
                 }
-            })
+            });
         }
     },
     {
@@ -169,7 +162,7 @@ var config = [
                 if(resultString.match(/successfully added a new RPL DODAG/)){
                     stateMachine.action(Action.DODAG_RDY);
                 }
-            })
+            });
         }
     },
 
@@ -186,14 +179,15 @@ var config = [
                 if(resultString.match(/Destination                             Flags        Next Hop                                Flags      Expires          Interface/)){
                     list_of_nodes = resultString.match(/([0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}::[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4})/g);
                     //list_of_nodes = db.getDifference(list_of_nodes); // getDiffrence is baaad TODO
-                    if(list_of_nodes.length) {
-                        curr_node.address = list_of_nodes.pop();
-                        stateMachine.action(Action.NEW_FIB_ITEM);
-                        cnt = 5;//TODO: TEMP
-                    } 
-                    else stateMachine.action(Action.NO_NEW_FIB_ITEM);
+                    if(list_of_nodes != null) {
+                        if (list_of_nodes.length) {
+                            curr_node.address = list_of_nodes.pop();
+                            stateMachine.action(Action.NEW_FIB_ITEM);
+                        }
+                        else stateMachine.action(Action.NO_NEW_FIB_ITEM);
+                    }
                 }
-            })
+            });
         }
     },
     {
@@ -203,26 +197,30 @@ var config = [
         ]
         ,
         onEnter: function (state, data, action) {
-            HandleSerial("sndpkt" + " " +curr_node.address + " 0 0 0 0 0 0 0 0 0 " + ++cnt + "\n",(resultString)=>{
+            HandleSerial("sndpkt " +curr_node.address + " 0 0 0 0 0 0 0 0 0 " +
+                ++pkt_cnt + "\n",
+                (resultString)=>{
                 if(resultString.match(/msg         : 1/)){
-                    let device_cnt = Number(resultString.match(/cnt         : [0-9]*/)[0].match(/[0-9]*/));
+                    device_cnt = Number(resultString.match(/cnt         : [0-9]*/)[0].match(/[0-9]+/)[0]);
                     for (let i = 0; i < device_cnt ; i++)
                     {
-                        curr_node.devices.push(        {
+                        curr_node.devices.push({}/*{
+                            name: "",
                             dataType: 0,
                             available: true,
                             currentValues: [],
                             getRequestTimeout: date.setSeconds(1),
                             lastGetRequest: date.getDate(),
                             setRequest: true
-                        });
+                        }*/);
                     }
+                    device_cnt = 0;
                     stateMachine.action(Action.SENSACT_LIST_ACK);
                 }
                 else{
                     console.log("BAD MSG IN GET_SENSACT_LIST! GOT STRING:\n"+ resultString);//TODO: ERROR HANDLING + IP ADDR
                 }
-            })
+            });
 
         }
     },
@@ -233,8 +231,12 @@ var config = [
         ]
         ,
         onEnter: function (state, data, action) {
-            SerialHandler.close();
-            console.log("sasd");
+            HandleSerial("sndpkt " +curr_node.address + " 2 " + device_cnt + " 0 0 0 0 0 0 0 " +
+                ++pkt_cnt + "\n",(resultString)=>{
+                curr_node.devices[device_cnt].name = (resultString.match(/name        : [1-9A-z()]+/)[0].match(/[1-9a-zA-Z]+/));
+                //TODO: Fill out device name
+                stateMachine.action(Action.SENSACT_LIST_ITEM_STEP);
+            });
         }
     },
     {
@@ -246,7 +248,10 @@ var config = [
         ]
         ,
         onEnter: function (state, data, action) {
-
+            if(++device_cnt < curr_node.devices.length) stateMachine.action(Action.DEV_NOT_RDY);
+            else{
+                stateMachine.action(Action.FIB_RDY)
+            } // TODO: Check if we can pop from from list_of_nodes...and go back with FIB_NOT_RDY
         }
     },
     {

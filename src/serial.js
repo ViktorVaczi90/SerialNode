@@ -1,6 +1,6 @@
 "use strict";
 let serconf = {
-    port: "/dev/ttyUSB1",
+    port: "/dev/ttyUSB0",
     baudrate: 115200
 };
 
