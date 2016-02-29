@@ -2,24 +2,23 @@
   "name": "serialnode",
   "version": "1.0.0",
   "description": "A node.js app for interacting with embedded devices on serial port.",
-  "main": "gulpfile.js",
+  "main": "./src/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "gulp": "gulp",
-    "start": "npm run gulp"
+    "start": "node ./server.js"
   },
   "keywords": [
     "serialport"
   ],
-  "author": "Viktor and Balázs",
+  "author": "Viktor Váczi and Balázs Horváth (blaisehorvath@github)",
   "license": "ISC",
   "dependencies": {
     "mongoose": "^4.4.4",
     "serialport": "^2.0.6",
-    "state-machine-js": "0.0.7"
+    "state-machine-js": "0.0.7",
+    "express": "^4.13.4"
   },
   "devDependencies": {
-    "dev": "^0.1.3",
-    "express": "^4.13.4"
   }
 }
