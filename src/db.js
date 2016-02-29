@@ -21,6 +21,7 @@ let nodeSchema = new Schema({
     newDeviceRequest: Boolean,
     devices: [
         {
+            name : String,
             dataType: Number,
             available: Boolean,
             currentValues: [],
@@ -74,26 +75,38 @@ db.insertNode = function (nodeObject) {
 
 /**
  * This function returns a promise to the result of the query from the database
- * @param {array} addressList - An array of strings. Each string is a device's network id.
- * @returns {Promise|P} - A promise when resolved, will contain an array of Node type objects.
+ * @param {array} fibrouteList - An array of strings where each element is a ipv6 id that was received from serial.
+ * @returns {Promise|Object} - A promise when resolved, will contain an array of strings that is the list of the .
  */
-db.getDifference = function (addressList) {
-    /* Query for selecting the nodes that have error or new on the fibroute */
-    let queryObj = {
-        $or: [
-            {address: { $nin : addressList}},
-            {error : true}
-        ]
-    };
+db.getDifference = function (fibrouteList) {
 
     return new Promise((resolve, reject) => {
-        Node.find(queryObj).exec((err, res)=>{
+        Node.find({})
+            .select({error : 1, address : 1, _id: 0})
+            .exec((err, res)=>{
             /* If something went wrong*/
             if (err) reject(err);
             /* If everything is okay */
             else resolve(res);
         });
-    });
+    }).then((networkIDs)=>{
+        let errorNetworkIDs = [];
+        let okNetworkIDs = [];
+        let newNetworkIDs = [];
+
+        for (let obj of networkIDs) {
+            if (obj.error == true) errorNetworkIDs.push(obj.address);
+            else {okNetworkIDs.push(obj.address)}
+        }
+
+        for (let id of fibrouteList) {
+            if (errorNetworkIDs.indexOf(id) == -1 || okNetworkIDs.indexOf(id) == -1) newNetworkIDs.push(id)
+        }
+
+        /* TODO: if needed use the other two arrays */
+
+        return networkIDs.concat(errorNetworkIDs)
+    })
 };
 
 /**

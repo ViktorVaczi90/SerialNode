@@ -37,9 +37,11 @@ function makeid () {
     return text;
 }
 
-db.dropDocuments({});
+db.getDifference(['adasdsad', 'adasdalkh']).then((res)=>{console.log("res",res)});
 
-generateNodes();
+//db.dropDocuments({});
+
+//generateNodes();
 
 //db.getNode({address : "p0Fh7b3PWiMJL2dH"}).then( (node)=>{
 //   console.log("Required node: ", node)
