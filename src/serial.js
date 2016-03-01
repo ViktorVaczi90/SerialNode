@@ -1,6 +1,6 @@
 "use strict";
 let serconf = {
-    port: "/dev/ttyUSB0",
+    port: "/dev/ttyUSB1",
     baudrate: 115200
 };
 
@@ -28,7 +28,7 @@ sp.handleSerial = function (writeString, callback) {
         if (data.toString("utf8").match(">")) {
             /*clearInterval(enter_timeout);
              enter_timeout = setInterval(enterTimeout, 1000);*/
-            //serialPort.removeAllListeners();
+            //sp.removeAllListeners();
             let result = buffer.join('');
             callback(result);
         }

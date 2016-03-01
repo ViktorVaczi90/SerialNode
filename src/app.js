@@ -1,10 +1,12 @@
 "use strict";
 var ifconfig_addr;
+var device1 = 0;
+var device2 = 0;
 const SerialHandler = require("./serial.js");
 const HandleSerial = SerialHandler.handleSerial;
 const CloseSerial = SerialHandler.close;
 const db = require("./db.js");
-let buildstring = "SERVER";//"SETUP"
+let buildstring = "SETUP";//"SERVER";//"SETUP"
 /* Importing state maschine */
 let i = 0;
 let date = new Date();
@@ -104,9 +106,10 @@ var Action = {
     TIMEOUT: 'TIMEOUT',//temporary states for setting up the device only
     TIMEOUT2: 'TIMEOUT2'
 };
+
 var config = [
     {
-        //initial: true,
+        initial: (buildstring=="SETUP"),
         name: State.INTIAL,
         transitions: [
             { action: Action.INITIATED, target: State.GETNETIF }
@@ -116,7 +119,7 @@ var config = [
                 if (resultString.match(/All up, running the shell now/)) {
                     stateMachine.action(Action.INITIATED);
                 }
-            });
+            })
         }
     },
     {
@@ -130,7 +133,7 @@ var config = [
                     ifconfig_addr = "fe80::2e00:2500:1257:3346";
                     stateMachine.action(Action.GOT_IPADDR);
                 }
-            });
+            })
         }
     },
     {
@@ -146,7 +149,7 @@ var config = [
                 if(resultString.match(/success: added fe80::01\/64 to interface 7/)){
                     stateMachine.action(Action.SETNETIF_RDY);
                 }
-            });
+            })
         }
     },
     {
@@ -160,22 +163,30 @@ var config = [
                 "rpl init 7\n"+
                 "rpl root 1 2001:db8::1\n",(resultString)=>{
                 if(resultString.match(/successfully added a new RPL DODAG/)){
-                    stateMachine.action(Action.DODAG_RDY);
+                    /*if(buildstring!="SETUP")*/stateMachine.action(Action.DODAG_RDY);
+                    //if(buildstring=="SETUP") SerialHandler.close(()=>{console.log("Serial closed!")});
                 }
-            });
+            })
         }
     },
 
     {
-        initial: true,// Only for debugging
+        initial: (buildstring!="SETUP"),// Only for debugging
         name: State.NEW_FIBROUTE,
         transitions: [
             {action: Action.NEW_FIB_ITEM, target: State.GET_SENSACT_LIST},
-            {action: Action.NO_NEW_FIB_ITEM, target:State.GET_NODES}
+            {action: Action.NO_NEW_FIB_ITEM, target:State.GET_NODES},
+            {action: Action.TIMEOUT2, target:State.READY}
         ]
         ,
         onEnter: function (state, data, action) {
+
             HandleSerial("fibroute\n",(resultString)=>{
+                //console.log(resultString);
+                if(resultString.match(/2001:db8::3600:3400:757:3156/)){device1 = 1;console.log("device1 rdy");}else device1 = 0;
+                if(resultString.match(/2001:db8::1e00:3800:1357:3346/)) {device2 = 1;console.log("device2 rdy");} else device2 = 0;
+                stateMachine.action(Action.TIMEOUT2);
+                /*
                 if(resultString.match(/Destination                             Flags        Next Hop                                Flags      Expires          Interface/)){
                     list_of_nodes = resultString.match(/([0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}::[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4}:[0-9a-fA-F]{0,4})/g);
                     //list_of_nodes = db.getDifference(list_of_nodes); // getDiffrence is baaad TODO
@@ -186,8 +197,8 @@ var config = [
                         }
                         else stateMachine.action(Action.NO_NEW_FIB_ITEM);
                     }
-                }
-            });
+                }*/
+            })
         }
     },
     {
@@ -220,8 +231,7 @@ var config = [
                 else{
                     console.log("BAD MSG IN GET_SENSACT_LIST! GOT STRING:\n"+ resultString);//TODO: ERROR HANDLING + IP ADDR
                 }
-            });
-
+            })
         }
     },
     {
@@ -236,7 +246,7 @@ var config = [
                 curr_node.devices[device_cnt].name = (resultString.match(/name        : [1-9A-z()]+/)[0].match(/[1-9a-zA-Z]+/));
                 //TODO: Fill out device name
                 stateMachine.action(Action.SENSACT_LIST_ITEM_STEP);
-            });
+            })
         }
     },
     {
@@ -335,16 +345,16 @@ var config = [
     {
         name: State.READY,
         transitions: [
-            {action: Action.TIMEOUT, target: State.WRITELED}
+            {action: Action.TIMEOUT, target: State.NEW_FIBROUTE}
         ]
         ,
         onEnter: function (state, data, action) {
 
-            i++;
-            i %= leds.length;
-            sp.close();
+            //i++;
+            //i %= leds.length;
+           // sp.close();
             //sp.write(leds[i]);
-            //timeoutevent = setTimeout(Timeout, 1000);
+            timeoutevent = setTimeout(Timeout, 1000);
         }
     },
     {
@@ -362,8 +372,14 @@ var config = [
 var stateMachine = new sm();
 // create multiple states with a config array
 SerialHandler.open(()=>{
-    stateMachine.start();
-})
+    /*let lofasz = new Promise((resolve, reject)=>{
+        HandleSerial("reboot\n",(resultfasz)=>{console.log(resultfasz); resolve(resultfasz)
+        }).then((dfg)=>{
+            HandleSerial("ifconfig\n",(resultfasz)=>{console.log(resultfasz); return dfg})
+    })
+    ;*/
+    stateMachine.start();}) //TODO
+//})})
 stateMachine.create(config);
 function Timeout(){stateMachine.action(Action.TIMEOUT);}
 function Timeout2(){stateMachine.action(Action.TIMEOUT2);}
@@ -371,35 +387,10 @@ function Timeout2(){stateMachine.action(Action.TIMEOUT2);}
 
 // add listener for state change
 stateMachine.onChange.add(function(state, data, action) {
-    console.log('State has changed to:', state.name);
+    //console.log('State has changed to:', state.name);
     //console.log('Got data:', data);
-    console.log('Got triggering action:', action);
-});/*int sndpkt(int argc, char **argv)
- {
- if (argc != 12) printf(
- "Not enough arguments!Usage:\n1: addr\n2: msg\n3: cnt\n4: data->val[0]\n5: data -> val[1]\n6: data ->val[2]\n7: data->unit\n8: data->scale\n9: name\n10: new_device\n");
- //printf("sending pkt to %s!\n", argv[1]);
- rfnode_pkt pkttemp;
- rfnode_pkt* pkt = &pkttemp;
-    pkt->msg = (pkt_msg)atoi(argv[2]);
-    pkt->cnt = (uint16_t)atoi(argv[3]);
-    pkt->data.val[0] = (int16_t)atoi(argv[4]);
-    pkt->data.val[1] = (int16_t)atoi(argv[5]);
-    pkt->data.val[2] = (int16_t)atoi(argv[6]);
-    pkt->data.unit = (uint8_t)atoi(argv[7]);
-    pkt->data.scale = (int8_t)atoi(argv[8]);
-strcpy(pkt->name, argv[9]);
-    pkt->new_device = (uint8_t)atoi(argv[10]);
-    pkt->pkt_cnt = (uint32_t)atoi(argv[11]);
-ipv6_addr_t addr;
-if (ipv6_addr_from_str(&addr, argv[1]) == NULL) {
-    puts("Error: unable to parse destination address\n");
-    return -1;
-}
-rfnode_udpsend(addr, (uint16_t) 12345,(char*) pkt, 1,
-    (unsigned int) 1000000);
-return 0;
-}*/
+    //console.log('Got triggering action:', action);
+});
 function sndpkt(addr,msg,cnt,val0,val1,val2,unit,scale,new_device,pkt_cnt){
     sp.write("sndpkt " + addr + " " + msg + " " + cnt + " " +val0 + " " + val1 + " " +val2 + " " + unit + " " + scale + " " + new_device + " " +pkt_cnt +"\n");
 
