@@ -2,6 +2,12 @@
 var ifconfig_addr;
 var device1 = 0;
 var device2 = 0;
+var LED_RED1 = 0;
+var LED_RED2 = 0;
+var LED_GREEN1 = 0;
+var LED_GREEN2 = 0;
+var LED_ORANGE1 = 0;
+var LED_ORANGE2 = 0;
 const SerialHandler = require("./serial.js");
 const HandleSerial = SerialHandler.handleSerial;
 const CloseSerial = SerialHandler.close;
@@ -349,14 +355,16 @@ var config = [
         ]
         ,
         onEnter: function (state, data, action) {
-
-            //i++;
-            //i %= leds.length;
-           // sp.close();
-            //sp.write(leds[i]);
-            timeoutevent = setTimeout(Timeout, 1000);
+            console.log("sndpkt 2001:db8::3600:3400:757:3156 4 0 " + LED_RED1 + " 0 0 0 0 LED(red) 0 "+ ++pkt_cnt);
+            HandleSerial("sndpkt 2001:db8::3600:3400:757:3156 4 0 " + LED_RED1 + " 0 0 0 0 LED(red) 0 "+ ++pkt_cnt+"\n",(serialData)=>{
+                ++LED_RED1;
+                LED_RED1 %=2;
+                //console.log("here\n");
+                timeoutevent = setTimeout(Timeout, 1000);
+            });
         }
     },
+    //sndpkt 2001:db8::3600:3400:757:3156 4 0 1 0 0 0 0 LED(RED) 0 20
     {
         name: State.WRITELED,
         transitions: [
@@ -387,9 +395,9 @@ function Timeout2(){stateMachine.action(Action.TIMEOUT2);}
 
 // add listener for state change
 stateMachine.onChange.add(function(state, data, action) {
-    //console.log('State has changed to:', state.name);
+    console.log('State has changed to:', state.name);
     //console.log('Got data:', data);
-    //console.log('Got triggering action:', action);
+    console.log('Got triggering action:', action);
 });
 function sndpkt(addr,msg,cnt,val0,val1,val2,unit,scale,new_device,pkt_cnt){
     sp.write("sndpkt " + addr + " " + msg + " " + cnt + " " +val0 + " " + val1 + " " +val2 + " " + unit + " " + scale + " " + new_device + " " +pkt_cnt +"\n");
