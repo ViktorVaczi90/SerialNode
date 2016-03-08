@@ -169,8 +169,8 @@ var config = [
                 "rpl init 7\n"+
                 "rpl root 1 2001:db8::1\n",(resultString)=>{
                 if(resultString.match(/successfully added a new RPL DODAG/)){
-                    /*if(buildstring!="SETUP")*/stateMachine.action(Action.DODAG_RDY);
-                    //if(buildstring=="SETUP") SerialHandler.close(()=>{console.log("Serial closed!")});
+                    ///*if(buildstring!="SETUP")*/stateMachine.action(Action.DODAG_RDY);
+                    if(buildstring=="SETUP") SerialHandler.close(()=>{console.log("Serial closed!")});
                 }
             })
         }
