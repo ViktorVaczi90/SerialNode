@@ -2,7 +2,7 @@
 /**
  * Created by v on 2016.02.29..
  */
-const SerialHandler = require("./serial2.js");
+const SerialHandler = require("./serial.js");
 
 let prom = new Promise((res, rej)=>{
     let serial = new SerialHandler();
