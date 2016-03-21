@@ -7,32 +7,51 @@ let serconf = {
 /* Importing the serialnode module */
 const SerialPort = require("serialport").SerialPort;
 
-/*Initializing a serialnode object with the parameters*/
-let sp = new SerialPort(serconf.port, {
-    baudrate: serconf.baudrate
-});
+class Sp {
+    constructor () {
+        let sp = new SerialPort(serconf.port, {
+            baudrate: serconf.baudrate
+        });
 
-sp.handleSerial = function (writeString, callback) {
+        sp.open();
 
-    sp.write(writeString);
+        this.sp = sp;
 
-    /* Initiating a buffer that will hold the data that's being streamed from the binary buffer */
-    let buffer = [];
+        console.log("Serial connection initiated!");
+    }
 
-    sp.on("data", (data)=> {
+    handleSerial(command) {
 
-        /* Converting the binary data to string and adding it to the string buffer */
-        buffer.push(data.toString("utf8"));
+        let prom = new Promise((resolve,reject)=>{
+            this.sp.write(command, (err, res) => {
 
-        /* If the message is over, return the buffer  */
-        if (data.toString("utf8").match(">")) {
-            /*clearInterval(enter_timeout);
-             enter_timeout = setInterval(enterTimeout, 1000);*/
-            //serialPort.removeAllListeners();
-            let result = buffer.join('');
-            callback(result);
-        }
-    });
-};
+                let buffer = [];
 
-module.exports = sp;
+                this.sp.on("data", (data)=> {
+                    /* Converting the binary data to string and adding it to the string buffer */
+                    buffer.push(data.toString("utf8"));
+
+                    /* If the message is over, return the buffer  */
+                    if (data.toString("utf8").match(">")) resolve(buffer);
+                })
+            })
+        });
+
+        return prom.then((asd)=>{
+            let result = asd.join('');
+            return result;
+        });
+
+    }
+
+    closeConn(){
+        this.sp.close((err)=>{
+            if (err) console.log(err);
+            else {
+                console.log("Disconnect successful");
+            }
+        })
+    }
+}
+
+module.exports = Sp;
