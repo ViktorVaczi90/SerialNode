@@ -13,11 +13,21 @@ class Sp {
             baudrate: serconf.baudrate
         });
 
-        sp.open();
-
         this.sp = sp;
 
-        console.log("Serial connection initiated!");
+
+    }
+
+    openConn () {
+        return new Promise((resolve, reject)=>{
+            this.sp.open((err)=>{
+                if (err) reject(err);
+                else {
+                    console.log("Serial connection initiated!");
+                    resolve(true)
+                }
+            });
+        })
     }
 
     handleSerial(command) {
