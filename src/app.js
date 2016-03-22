@@ -8,7 +8,7 @@ var LED_GREEN1 = 0;
 var LED_GREEN2 = 0;
 var LED_ORANGE1 = 0;
 var LED_ORANGE2 = 0;
-
+let leds = [0,0,0,0,0,0];
 const SerialHandler = require("./serial.js");
 let serial = new SerialHandler();
 let HandleSerial = serial.handleSerial;
@@ -24,20 +24,22 @@ let curr_node = {
     devices: [
     ]
 }
-let leds =
-    [   "fibroute \n",
-        "sndpkt 2001:db8::2e00:2500:1257:3346 4 0 1 0 0 0 0 LED(red) 0 0\n",
-        "sndpkt 2001:db8::2e00:2500:1257:3346 4 1 1 0 0 0 0 LED(green) 0 0\n",
-        "sndpkt 2001:db8::2e00:2500:1257:3346 4 2 1 0 0 0 0 LED(orange) 0 0\n" ,
-        "sndpkt 2001:db8::2e00:2500:1257:3346 4 0 0 0 0 0 0 LED(red) 0 0\n",
-        "sndpkt 2001:db8::2e00:2500:1257:3346 4 1 0 0 0 0 0 LED(green) 0 0\n",
-        "sndpkt 2001:db8::2e00:2500:1257:3346 4 2 0 0 0 0 0 LED(orange) 0 0\n" ,
-        "sndpkt 2001:db8::1e00:3800:1357:3346 4 0 1 0 0 0 0 LED(red) 0 0\n",
-        "sndpkt 2001:db8::1e00:3800:1357:3346 4 1 1 0 0 0 0 LED(green) 0 0\n",
-        "sndpkt 2001:db8::1e00:3800:1357:3346 4 2 1 0 0 0 0 LED(orange) 0 0\n" ,
-        "sndpkt 2001:db8::1e00:3800:1357:3346 4 0 0 0 0 0 0 LED(red) 0 0\n",
-        "sndpkt 2001:db8::1e00:3800:1357:3346 4 1 0 0 0 0 0 LED(green) 0 0\n",
-        "sndpkt 2001:db8::1e00:3800:1357:3346 4 2 0 0 0 0 0 LED(orange) 0 0\n" ];
+let firstPartLeds = [
+    "sndpkt 2001:db8::3600:3400:757:3156 4 0 ",
+    "sndpkt 2001:db8::3600:3400:757:3156 4 1 ",
+    "sndpkt 2001:db8::3600:3400:757:3156 4 2 ",
+    "sndpkt 2001:db8::1e00:3800:1357:3346 4 0 ",
+    "sndpkt 2001:db8::1e00:3800:1357:3346 4 1 ",
+    "sndpkt 2001:db8::1e00:3800:1357:3346 4 2 "
+];
+let secondPartLeds = [
+    " 0 0 0 0 LED(red) 0 ",
+    " 0 0 0 0 LED(green) 0 ",
+    " 0 0 0 0 LED(orange) 0 ",
+    " 0 0 0 0 LED(red) 0 ",
+    " 0 0 0 0 LED(green) 0 ",
+    " 0 0 0 0 LED(orange) 0 "
+];
 let timeoutevent;
 
 
@@ -422,29 +424,35 @@ var config = [
     {
         name: State.READY,
         transitions: [
-            {action: Action.TIMEOUT, target: State.NEW_FIBROUTE}
+            {action: Action.TIMEOUT, target: State.NEW_FIBROUTE},
+            {action: Action.TIMEOUT2, target: State.WRITELED}
         ]
         ,
         onEnter: function (state, data, action) {
-            console.log("sndpkt 2001:db8::3600:3400:757:3156 4 0 " + LED_RED1 + " 0 0 0 0 LED(red) 0 "+ ++pkt_cnt);
-            serial.handleSerial("sndpkt 2001:db8::3600:3400:757:3156 4 0 " + LED_RED1 + " 0 0 0 0 LED(red) 0 "+ ++pkt_cnt+"\n").then((serialData)=>{
-                ++LED_RED1;
-                LED_RED1 %=2;
-                //console.log("here\n");
-                timeoutevent = setTimeout(Timeout, 1000);
-            });
+            if(++pkt_cnt%7 <6){
+                serial.handleSerial(firstPartLeds[pkt_cnt%7] + leds[pkt_cnt%7] + secondPartLeds[pkt_cnt%7] +                        pkt_cnt+"\n").then((serialData)=>{
+                    console.log("here\n");
+                    //timeoutevent = setTimeout(Timeout, 100);
+                    stateMachine.action(Action.TIMEOUT2);
+                });
+            }
+            else{
+                for(var i = 0; i < 6; i++)
+                {if(leds[i]) leds[i] = 0; else leds[i] = 1;}
+                console.log(leds.toString());
+                stateMachine.action(Action.TIMEOUT);
+            }
         }
     },
-    //sndpkt 2001:db8::3600:3400:757:3156 4 0 1 0 0 0 0 LED(RED) 0 20
     {
         name: State.WRITELED,
         transitions: [
-            { action: Action.TIMEOUT2, target: State.READY }
+            { action: Action.TIMEOUT, target: State.READY }
         ]
         ,
         onEnter: function(state,data,action){
-            timeoutevent = setTimeout(Timeout2, 300);
-            console.log(i);
+            //timeoutevent = setTimeout(Timeout2, 300);
+            stateMachine.action(Action.TIMEOUT);
         }
     }
 ];
@@ -468,4 +476,28 @@ function sndpkt(addr,msg,cnt,val0,val1,val2,unit,scale,new_device,pkt_cnt){
     sp.write("sndpkt " + addr + " " + msg + " " + cnt + " " +val0 + " " + val1 + " " +val2 + " " + unit + " " + scale + " " + new_device + " " +pkt_cnt +"\n");
 
 }
-
+class AppFuncs{
+    getData(){
+        return {
+            "device1":device1,
+            "device2":device2,
+            "LED_RED1":     leds[0],
+            "LED_GREEN1":   leds[1],
+            "LED_ORANGE1":  leds[2],
+            "LED_RED2":     leds[3],
+            "LED_GREEN2":   leds[4],
+            "LED_ORANGE2":  leds[5]
+        }
+    }
+    setData(dataIn){
+        device1=dataIn.device1,
+            device2=dataIn.device2,
+            leds[0]=dataIn.LED_RED1,
+            leds[1]=dataIn.LED_GREEN1,
+            leds[2]=dataIn.LED_ORANGE1,
+            leds[3]=dataIn.LED_RED2,
+            leds[4]=dataIn.LED_GREEN2,
+            leds[5]=dataIn.LED_ORANGE2
+    }
+}
+module.exports = AppFuncs;
