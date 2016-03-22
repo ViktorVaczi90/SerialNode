@@ -57,15 +57,47 @@
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 <script src="http://listjs.com/no-cdn/list.js"></script>
 <script>
+    
+    List.prototype.addDevice = function (ipAddr) {
+        var container = "<div id='"+ipAddr+"'/>";
+
+        var redLed = document.createElement("button");
+        redLed.className = "btn btn-danger";
+        redLed.type = "button";
+        redLed.innerHTML = "Red";
+        redLed.onclick = function(){
+            //todo: post
+        };
+
+        var orangeLed = document.createElement("button");
+        orangeLed.className = "btn btn-warning";
+        orangeLed.type = "button";
+        orangeLed.innerHTML = "Orange";
+
+        var greenLed = document.createElement("button");
+        greenLed.className = "btn btn-success";
+        greenLed.type = "button";
+        greenLed.innerHTML = "green";
+
+        this.add({address : ipAddr, devices : container});
+
+        var containerDOM = $("#" + ipAddr);
+        containerDOM[0].appendChild(redLed);
+        containerDOM[0].appendChild(orangeLed);
+        containerDOM[0].appendChild(greenLed);
+    };
+
     var options = {
         valueNames: [ 'address', 'devices' ]
     };
 
     var userList = new List('users', options,[
-        {address : "", devices : "<input type='submit' />"},
-        {address : "Asadasdasd", devices : "<input type='submit'>Asda</input>"}
+        {address : "", devices : "<input type='submit' />"}
     ]);
     userList.remove("address", "");
+    userList.addDevice("a654adssa45");
+    userList.addDevice("a6s5d4a64da");
+    userList.addDevice("513k1d351gs");
 </script>
 </body>
 </html>
