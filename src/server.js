@@ -5,12 +5,8 @@ const db = require("./db");
 const app = express();
 
 
-db.getDifference(["UaJiYFwCNH3xN8eW", "Ww6wuEQ2S0wTlj2c"]).then((response)=>{
-    console.log(response)
-});
-
 app.get('/', (req, res) => {
-    res.send('Hello World!');
+    res.sendfile("./index.html");
 });
 
 app.listen(3000, () => {
