@@ -59,25 +59,31 @@
 <script>
     
     List.prototype.addDevice = function (ipAddr) {
-        var container = "<div id='"+ipAddr+"'/>";
+        var container = "<div class='btn-toolbar' id='"+ipAddr+"'/>";
 
         var redLed = document.createElement("button");
         redLed.className = "btn btn-danger";
         redLed.type = "button";
-        redLed.innerHTML = "Red";
+        redLed.innerHTML = "red";
         redLed.onclick = function(){
-            //todo: post
+            $.post("leds", {ledType: redLed.innerHTML, ipAddr : ipAddr});
         };
 
         var orangeLed = document.createElement("button");
         orangeLed.className = "btn btn-warning";
         orangeLed.type = "button";
-        orangeLed.innerHTML = "Orange";
+        orangeLed.innerHTML = "orange";
+        orangeLed.onclick = function(){
+            $.post("leds", {ledType: orangeLed.innerHTML, ipAddr : ipAddr});
+        };
 
         var greenLed = document.createElement("button");
         greenLed.className = "btn btn-success";
         greenLed.type = "button";
         greenLed.innerHTML = "green";
+        greenLed.onclick = function(){
+            $.post("leds", {ledType: greenLed.innerHTML, ipAddr : ipAddr});
+        };
 
         this.add({address : ipAddr, devices : container});
 

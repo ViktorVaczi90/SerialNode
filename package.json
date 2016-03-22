@@ -14,11 +14,12 @@
   "author": "Viktor Váczi and Balázs Horváth (blaisehorvath@github)",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^1.15.0",
+    "connect": "^3.4.1",
+    "express": "^4.13.4",
     "mongoose": "^4.4.4",
     "serialport": "^2.0.6",
-    "state-machine-js": "0.0.7",
-    "express": "^4.13.4"
+    "state-machine-js": "0.0.7"
   },
-  "devDependencies": {
-  }
+  "devDependencies": {}
 }
