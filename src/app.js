@@ -13,7 +13,7 @@ const SerialHandler = require("./serial.js");
 let serial = new SerialHandler();
 let HandleSerial = serial.handleSerial;
 const db = require("./db.js");
-let buildstring = "SETUP";//"SERVER";//"SETUP"
+let buildstring = "SERVER";//"SERVER";//"SETUP"
 /* Importing state maschine */
 let i = 0;
 let date = new Date();
