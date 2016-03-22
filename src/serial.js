@@ -31,7 +31,6 @@ class Sp {
     }
 
     handleSerial(command) {
-
         let prom = new Promise((resolve,reject)=>{
             this.sp.write(command, (err, res) => {
 
@@ -42,7 +41,7 @@ class Sp {
                     buffer.push(data.toString("utf8"));
 
                     /* If the message is over, return the buffer  */
-                    if (data.toString("utf8").match(">")) resolve(buffer);
+                    if (data.toString("utf8").match(">")) {resolve(buffer);}
                 })
             })
         });

@@ -8,11 +8,12 @@ var LED_GREEN1 = 0;
 var LED_GREEN2 = 0;
 var LED_ORANGE1 = 0;
 var LED_ORANGE2 = 0;
+
 const SerialHandler = require("./serial.js");
-const HandleSerial = SerialHandler.handleSerial;
-const CloseSerial = SerialHandler.close;
+let serial = new SerialHandler();
+let HandleSerial = serial.handleSerial;
 const db = require("./db.js");
-let buildstring = "SETUP";//"SERVER";//"SETUP"
+let buildstring = "SERVER";//"SERVER";//"SETUP"
 /* Importing state maschine */
 let i = 0;
 let date = new Date();
@@ -56,6 +57,10 @@ var State = {
     GETNETIF: 'GETNETIF',
     SETNETIF: 'SETNETIF',
     SETNETIF2: 'SETNETIF2',
+    SETNETIF3: 'SETNETIF3',
+    SETNETIF4: 'SETNETIF4',
+    SETNETIF5: 'SETNETIF5',
+    SETNETIF6: 'SETNETIF6',
 
     NEW_FIBROUTE: 'NEW_FIBROUTE',
     GET_SENSACT_LIST: 'GET_SENSACT_LIST',
@@ -121,7 +126,7 @@ var config = [
             { action: Action.INITIATED, target: State.GETNETIF }
         ],
         onEnter: function(state,data,action) {
-            HandleSerial("reboot\n", (resultString)=> {
+            serial.handleSerial("reboot\n").then((resultString)=> {
                 if (resultString.match(/All up, running the shell now/)) {
                     stateMachine.action(Action.INITIATED);
                 }
@@ -134,7 +139,7 @@ var config = [
             { action: Action.GOT_IPADDR, target: State.SETNETIF }
         ],
         onEnter: function(state,data,action){
-            HandleSerial("ifconfig\n", (resultString)=> {
+            serial.handleSerial("ifconfig\n").then((resultString)=> {
                 if (resultString.match(/inet6 addr: fe80::2e00:2500:1257:3346\/64  scope: local/)) {//TODO
                     ifconfig_addr = "fe80::2e00:2500:1257:3346";
                     stateMachine.action(Action.GOT_IPADDR);
@@ -142,6 +147,14 @@ var config = [
             })
         }
     },
+    /*
+     "ifconfig 7 del "+ifconfig_addr + "\n" +
+     "ifconfig 7 set addr 01\n"+
+     "ifconfig 7 add fe80::01\n"
+     "ifconfig 7 add 2001:db8::1\n"+
+     "rpl init 7\n"+
+     "rpl root 1 2001:db8::1\n"
+    * */
     {
         name: State.SETNETIF,
         transitions: [
@@ -149,10 +162,9 @@ var config = [
         ]
         ,
         onEnter: function(state,data,action){
-            HandleSerial("ifconfig 7 del "+ifconfig_addr + "\n" +
-                "ifconfig 7 set addr 01\n"+
-                "ifconfig 7 add fe80::01\n",(resultString)=>{
-                if(resultString.match(/success: added fe80::01\/64 to interface 7/)){
+            serial.handleSerial("ifconfig 7 del "+ifconfig_addr + "\n").then((resultString)=>{
+                //console.log(resultString)
+                if(resultString.match(/to interface 7/)){
                     stateMachine.action(Action.SETNETIF_RDY);
                 }
             })
@@ -161,16 +173,75 @@ var config = [
     {
         name: State.SETNETIF2,
         transitions: [
+            { action: Action.SETNETIF_RDY, target: State.SETNETIF3 }
+        ]
+        ,
+        onEnter: function(state,data,action){
+            serial.handleSerial("ifconfig 7 set addr 01\n").then((resultString)=>{
+                //console.log(resultString)
+                if(resultString.match(/address on interface 7 to 01/)){
+                    stateMachine.action(Action.SETNETIF_RDY);
+                }
+            })
+        }
+    },
+    {
+        name: State.SETNETIF3,
+        transitions: [
+            { action: Action.SETNETIF_RDY, target: State.SETNETIF4 }
+        ]
+        ,
+        onEnter: function(state,data,action){
+            serial.handleSerial("ifconfig 7 add fe80::01\n").then((resultString)=>{
+                //console.log(resultString)
+                if(resultString.match(/to interface 7/)){
+                    stateMachine.action(Action.SETNETIF_RDY);
+                }
+            })
+        }
+    },
+    {
+        name: State.SETNETIF4,
+        transitions: [
+            { action: Action.SETNETIF_RDY, target: State.SETNETIF5 }
+        ]
+        ,
+        onEnter: function(state,data,action){
+            serial.handleSerial("ifconfig 7 add 2001:db8::1\n").then((resultString)=>{
+                //console.log(resultString)
+                if(resultString.match(/to interface 7/)){
+                    stateMachine.action(Action.SETNETIF_RDY);
+                }
+            })
+        }
+    },
+    {
+        name: State.SETNETIF5,
+        transitions: [
+            { action: Action.SETNETIF_RDY, target: State.SETNETIF6 }
+        ]
+        ,
+        onEnter: function(state,data,action){
+            serial.handleSerial("rpl init 7\n").then((resultString)=>{
+                //console.log(resultString)
+                if(resultString.match(/successfully initialized RPL on interface 7/)){
+                    stateMachine.action(Action.SETNETIF_RDY);
+                }
+            })
+        }
+    },
+    {
+        name: State.SETNETIF6,
+        transitions: [
             { /*action: Action.DODAG_RDY, target: State.READY */action: Action.DODAG_RDY, target: State.NEW_FIBROUTE}
         ]
         ,
         onEnter: function(state,data,action){
-            HandleSerial("ifconfig 7 add 2001:db8::1\n"+
-                "rpl init 7\n"+
-                "rpl root 1 2001:db8::1\n",(resultString)=>{
+            serial.handleSerial("rpl root 1 2001:db8::1\n").then((resultString)=>{
+                //console.log(resultString);
                 if(resultString.match(/successfully added a new RPL DODAG/)){
                     ///*if(buildstring!="SETUP")*/stateMachine.action(Action.DODAG_RDY);
-                    if(buildstring=="SETUP") SerialHandler.close(()=>{console.log("Serial closed!")});
+                    if(buildstring=="SETUP") serial.closeConn(()=>{console.log("Serial closed!")});
                 }
             })
         }
@@ -187,7 +258,7 @@ var config = [
         ,
         onEnter: function (state, data, action) {
 
-            HandleSerial("fibroute\n",(resultString)=>{
+            serial.handleSerial("fibroute\n").then((resultString)=>{
                 //console.log(resultString);
                 if(resultString.match(/2001:db8::3600:3400:757:3156/)){device1 = 1;console.log("device1 rdy");}else device1 = 0;
                 if(resultString.match(/2001:db8::1e00:3800:1357:3346/)) {device2 = 1;console.log("device2 rdy");} else device2 = 0;
@@ -214,8 +285,8 @@ var config = [
         ]
         ,
         onEnter: function (state, data, action) {
-            HandleSerial("sndpkt " +curr_node.address + " 0 0 0 0 0 0 0 0 0 " +
-                ++pkt_cnt + "\n",
+            serial.handleSerial("sndpkt " +curr_node.address + " 0 0 0 0 0 0 0 0 0 " +
+                ++pkt_cnt + "\n").then(
                 (resultString)=>{
                 if(resultString.match(/msg         : 1/)){
                     device_cnt = Number(resultString.match(/cnt         : [0-9]*/)[0].match(/[0-9]+/)[0]);
@@ -248,7 +319,7 @@ var config = [
         ,
         onEnter: function (state, data, action) {
             HandleSerial("sndpkt " +curr_node.address + " 2 " + device_cnt + " 0 0 0 0 0 0 0 " +
-                ++pkt_cnt + "\n",(resultString)=>{
+                ++pkt_cnt + "\n").then((resultString)=>{
                 curr_node.devices[device_cnt].name = (resultString.match(/name        : [1-9A-z()]+/)[0].match(/[1-9a-zA-Z]+/));
                 //TODO: Fill out device name
                 stateMachine.action(Action.SENSACT_LIST_ITEM_STEP);
@@ -356,7 +427,7 @@ var config = [
         ,
         onEnter: function (state, data, action) {
             console.log("sndpkt 2001:db8::3600:3400:757:3156 4 0 " + LED_RED1 + " 0 0 0 0 LED(red) 0 "+ ++pkt_cnt);
-            HandleSerial("sndpkt 2001:db8::3600:3400:757:3156 4 0 " + LED_RED1 + " 0 0 0 0 LED(red) 0 "+ ++pkt_cnt+"\n",(serialData)=>{
+            serial.handleSerial("sndpkt 2001:db8::3600:3400:757:3156 4 0 " + LED_RED1 + " 0 0 0 0 LED(red) 0 "+ ++pkt_cnt+"\n").then((serialData)=>{
                 ++LED_RED1;
                 LED_RED1 %=2;
                 //console.log("here\n");
@@ -379,15 +450,9 @@ var config = [
 ];
 var stateMachine = new sm();
 // create multiple states with a config array
-SerialHandler.open(()=>{
-    /*let lofasz = new Promise((resolve, reject)=>{
-        HandleSerial("reboot\n",(resultfasz)=>{console.log(resultfasz); resolve(resultfasz)
-        }).then((dfg)=>{
-            HandleSerial("ifconfig\n",(resultfasz)=>{console.log(resultfasz); return dfg})
-    })
-    ;*/
-    stateMachine.start();}) //TODO
-//})})
+serial.openConn().then(()=>{
+    stateMachine.start();
+})
 stateMachine.create(config);
 function Timeout(){stateMachine.action(Action.TIMEOUT);}
 function Timeout2(){stateMachine.action(Action.TIMEOUT2);}
