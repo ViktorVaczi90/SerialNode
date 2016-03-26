@@ -57,7 +57,12 @@
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 <script src="http://listjs.com/no-cdn/list.js"></script>
 <script>
-    
+
+
+var excapeSelector = function (selector){
+    return selector.replace(/:/g, '\\:')
+};
+
     List.prototype.addDevice = function (ipAddr) {
         var container = "<div class='btn-toolbar' id='"+ipAddr+"'/>";
 
@@ -87,7 +92,8 @@
 
         this.add({address : ipAddr, devices : container});
 
-        var containerDOM = $("#" + ipAddr);
+        var containerDOM = $("#" +  excapeSelector(ipAddr));
+
         containerDOM[0].appendChild(redLed);
         containerDOM[0].appendChild(orangeLed);
         containerDOM[0].appendChild(greenLed);
@@ -97,13 +103,26 @@
         valueNames: [ 'address', 'devices' ]
     };
 
-    var userList = new List('users', options,[
+    window.userList = new List('users', options,[
         {address : "", devices : "<input type='submit' />"}
     ]);
-    userList.remove("address", "");
-    userList.addDevice("a654adssa45");
-    userList.addDevice("a6s5d4a64da");
-    userList.addDevice("513k1d351gs");
+    window.userList.remove("address", "");
+    window.userList.addDevice("2001:db8::3600:3400:757:3156");
+    window.userList.addDevice("2001:db8::1e00:3800:1357:3346");
+    //window.userList.Serverfunction()
+/*List.prototype.Serverfunction = function
+        ()
+{setInterval($.get("leds",function(data){;
+    //if(data.device1 === 1)userList.get("address","2001:db8::3600:3400:757:3156").show(); else userList.get("address","2001:db8::3600:3400:757:3156").hide();
+    //if(data.device2 === 1)userList.get("address","2001:db8::1e00:3800:1357:3346").show(); else userList.get("address","2001:db8::1e00:3800:1357:3346").hide();
+}),1000);
+}*/
+    setInterval(csssáááá,1000);
+    function csssáááá(){$.get("leds",function(data){
+        if(data.device1 === 1)userList.get("address","2001:db8::3600:3400:757:3156")[0].show(); else userList.get("address","2001:db8::3600:3400:757:3156")[0].hide();
+        if(data.device2 === 1)userList.get("address","2001:db8::1e00:3800:1357:3346")[0].show(); else userList.get("address","2001:db8::1e00:3800:1357:3346")[0].hide();
+    })}
+
 </script>
 </body>
 </html>

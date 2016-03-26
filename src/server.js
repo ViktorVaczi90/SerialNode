@@ -1,7 +1,8 @@
 "use strict";
 const express = require('express');
 const db = require("./db");
-
+//sd
+const datas = require("./app.js");
 
 const app = express();
 
@@ -18,13 +19,15 @@ app.get('/', (req, res) => {
     res.sendFile("index.html", {"root": __dirname});
 });
 
-//app.get('/leds',(req,res) => {
-//    res.send(datas.getData());
-//})
+app.get('/leds',(req,res) => {/**/
+      /*$/**/res.send(datas.getData());
+    //
+})
 
 let i = 1;
 app.post('/leds', (req, res) => {
     console.log("POST", "/leds", ++i, req.body);
+    datas.getPostRequest(req.body);
     console.log();
     res.statusCode = 200;
     res.send()

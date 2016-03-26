@@ -437,8 +437,8 @@ var config = [
                 });
             }
             else{
-                for(var i = 0; i < 6; i++)
-                {if(leds[i]) leds[i] = 0; else leds[i] = 1;}
+                /*for(var i = 0; i < 6; i++)
+                {if(leds[i]) leds[i] = 0; else leds[i] = 1;}*/
                 console.log(leds.toString());
                 stateMachine.action(Action.TIMEOUT);
             }
@@ -474,13 +474,14 @@ stateMachine.onChange.add(function(state, data, action) {
 });
 function sndpkt(addr,msg,cnt,val0,val1,val2,unit,scale,new_device,pkt_cnt){
     sp.write("sndpkt " + addr + " " + msg + " " + cnt + " " +val0 + " " + val1 + " " +val2 + " " + unit + " " + scale + " " + new_device + " " +pkt_cnt +"\n");
-
 }
 class AppFuncs{
-    getData(){
+    static getData(){
         return {
             "device1":device1,
+            "device1IP":"2001:db8::3600:3400:757:3156",
             "device2":device2,
+            "device2IP":"2001:db8::1e00:3800:1357:3346",
             "LED_RED1":     leds[0],
             "LED_GREEN1":   leds[1],
             "LED_ORANGE1":  leds[2],
@@ -489,8 +490,8 @@ class AppFuncs{
             "LED_ORANGE2":  leds[5]
         }
     }
-    setData(dataIn){
-        device1=dataIn.device1,
+    static setData(dataIn){
+           device1=dataIn.device1,
             device2=dataIn.device2,
             leds[0]=dataIn.LED_RED1,
             leds[1]=dataIn.LED_GREEN1,
@@ -498,6 +499,38 @@ class AppFuncs{
             leds[3]=dataIn.LED_RED2,
             leds[4]=dataIn.LED_GREEN2,
             leds[5]=dataIn.LED_ORANGE2
+    }
+    static getPostRequest(data)
+    {
+        console.log(leds);
+        //console.log(data)
+        if(data.ipAddr === "2001:db8::3600:3400:757:3156"){
+            switch (data.ledType){
+                case "red":
+                    leds[0] = ~~!leds[0];
+                    console.log("LEDREEEEEEED CSÁÁ");
+                    break;
+                case "green":
+                    leds[1] = ~~!leds[1];
+                    break;
+                case "orange":
+                    leds[2] = ~~!leds[2];
+                    break;
+            }
+        }
+        if(data.ipAddr === "2001:db8::1e00:3800:1357:3346"){
+            switch (data.ledType){
+                case "red":
+                    leds[3] = ~~!leds[3];
+                    break;
+                case "green":
+                    leds[4] = ~~!leds[4];
+                    break;
+                case "orange":
+                    leds[5] = ~~!leds[5];
+                    break;
+            }
+        }
     }
 }
 module.exports = AppFuncs;
