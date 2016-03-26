@@ -9,6 +9,7 @@ var LED_GREEN2 = 0;
 var LED_ORANGE1 = 0;
 var LED_ORANGE2 = 0;
 let leds = [0,0,0,0,0,0];
+let ledreqs = [0,0,0,0,0,0];
 const SerialHandler = require("./serial.js");
 let serial = new SerialHandler();
 let HandleSerial = serial.handleSerial;
@@ -430,11 +431,13 @@ var config = [
         ,
         onEnter: function (state, data, action) {
             if(++pkt_cnt%7 <6){
-                serial.handleSerial(firstPartLeds[pkt_cnt%7] + leds[pkt_cnt%7] + secondPartLeds[pkt_cnt%7] +                        pkt_cnt+"\n").then((serialData)=>{
-                    console.log("here\n");
-                    //timeoutevent = setTimeout(Timeout, 100);
-                    stateMachine.action(Action.TIMEOUT2);
-                });
+                if(ledreqs[pkt_cnt%7] == 1 ) {
+                    serial.handleSerial(firstPartLeds[pkt_cnt % 7] + leds[pkt_cnt % 7] + secondPartLeds[pkt_cnt % 7]                        + pkt_cnt + "\n").then((serialData)=> {
+                        //timeoutevent = setTimeout(Timeout, 100);
+                        ledreqs[pkt_cnt%7] = 0;
+                        stateMachine.action(Action.TIMEOUT2);
+                    })
+                }else stateMachine.action(Action.TIMEOUT2);
             }
             else{
                 /*for(var i = 0; i < 6; i++)
@@ -508,13 +511,15 @@ class AppFuncs{
             switch (data.ledType){
                 case "red":
                     leds[0] = ~~!leds[0];
-                    console.log("LEDREEEEEEED CSÁÁ");
+                    ledreqs[0] = 1;
                     break;
                 case "green":
                     leds[1] = ~~!leds[1];
+                    ledreqs[1] = 1;
                     break;
                 case "orange":
                     leds[2] = ~~!leds[2];
+                    ledreqs[2] = 1;
                     break;
             }
         }
@@ -522,12 +527,15 @@ class AppFuncs{
             switch (data.ledType){
                 case "red":
                     leds[3] = ~~!leds[3];
+                    ledreqs[3] = 1;
                     break;
                 case "green":
                     leds[4] = ~~!leds[4];
+                    ledreqs[4] = 1;
                     break;
                 case "orange":
                     leds[5] = ~~!leds[5];
+                    ledreqs[5] = 1;
                     break;
             }
         }
