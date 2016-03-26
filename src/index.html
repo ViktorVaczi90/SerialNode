@@ -67,11 +67,19 @@ var excapeSelector = function (selector){
         var container = "<div class='btn-toolbar' id='"+ipAddr+"'/>";
 
         var redLed = document.createElement("button");
-        redLed.className = "btn btn-danger";
+        redLed.className = "btn btn-default";
         redLed.type = "button";
         redLed.innerHTML = "red";
+        redLed.isOn = false;
         redLed.onclick = function(){
-            $.post("leds", {ledType: redLed.innerHTML, ipAddr : ipAddr});
+            if (redLed.isOn === false) {
+                $.post("leds", {ledType: redLed.innerHTML, ipAddr : ipAddr, isOn : true});
+                redLed.className = "btn btn-danger";
+            }
+            else {
+                $.post("leds", {ledType: redLed.innerHTML, ipAddr : ipAddr, isOn : false});
+                redLed.className = "btn btn-default";
+            }
         };
 
         var orangeLed = document.createElement("button");
