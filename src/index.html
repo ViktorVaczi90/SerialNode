@@ -73,29 +73,51 @@ var excapeSelector = function (selector){
         redLed.isOn = false;
         redLed.onclick = function(){
             if (redLed.isOn === false) {
-                $.post("leds", {ledType: redLed.innerHTML, ipAddr : ipAddr, isOn : true});
+                $.post("leds", {ledType: redLed.innerHTML, ipAddr : ipAddr, isOn : 1});
+                redLed.isOn = true;
                 redLed.className = "btn btn-danger";
             }
             else {
-                $.post("leds", {ledType: redLed.innerHTML, ipAddr : ipAddr, isOn : false});
+                $.post("leds", {ledType: redLed.innerHTML, ipAddr : ipAddr, isOn : 0});
+                redLed.isOn = false;
                 redLed.className = "btn btn-default";
             }
         };
 
         var orangeLed = document.createElement("button");
-        orangeLed.className = "btn btn-warning";
+        orangeLed.className = "btn btn-default";
         orangeLed.type = "button";
         orangeLed.innerHTML = "orange";
+        orangeLed.isOn = false;
         orangeLed.onclick = function(){
-            $.post("leds", {ledType: orangeLed.innerHTML, ipAddr : ipAddr});
+            if (orangeLed.isOn === false) {
+                $.post("leds", {ledType: orangeLed.innerHTML, ipAddr : ipAddr, isOn : 1});
+                orangeLed.isOn = true;
+                orangeLed.className = "btn btn-warning";
+            }
+            else {
+                $.post("leds", {ledType: orangeLed.innerHTML, ipAddr : ipAddr, isOn : 0});
+                orangeLed.isOn = false;
+                orangeLed.className = "btn btn-default";
+            }
         };
 
         var greenLed = document.createElement("button");
-        greenLed.className = "btn btn-success";
+        greenLed.className = "btn btn-default";
         greenLed.type = "button";
         greenLed.innerHTML = "green";
+        greenLed.isOn = false;
         greenLed.onclick = function(){
-            $.post("leds", {ledType: greenLed.innerHTML, ipAddr : ipAddr});
+            if (greenLed.isOn === false) {
+                $.post("leds", {ledType: greenLed.innerHTML, ipAddr : ipAddr, isOn : 1});
+                greenLed.isOn = true;
+                greenLed.className = "btn btn-success";
+            }
+            else {
+                $.post("leds", {ledType: greenLed.innerHTML, ipAddr : ipAddr, isOn : 0});
+                greenLed.isOn = false;
+                greenLed.className = "btn btn-default";
+            }
         };
 
         this.add({address : ipAddr, devices : container});

@@ -14,7 +14,7 @@ const SerialHandler = require("./serial.js");
 let serial = new SerialHandler();
 let HandleSerial = serial.handleSerial;
 const db = require("./db.js");
-let buildstring = "SERVER";//"SERVER";//"SETUP"
+let buildstring = "SETUPp";//"SERVER";//"SETUP"
 /* Importing state maschine */
 let i = 0;
 let date = new Date();
@@ -505,20 +505,18 @@ class AppFuncs{
     }
     static getPostRequest(data)
     {
-        console.log(leds);
-        //console.log(data)
         if(data.ipAddr === "2001:db8::3600:3400:757:3156"){
             switch (data.ledType){
                 case "red":
-                    leds[0] = ~~!leds[0];
+                    leds[0] = data.isOn;
                     ledreqs[0] = 1;
                     break;
-                case "green":
-                    leds[1] = ~~!leds[1];
+                case "orange":
+                    leds[1] = data.isOn;
                     ledreqs[1] = 1;
                     break;
-                case "orange":
-                    leds[2] = ~~!leds[2];
+                case "green":
+                    leds[2] = data.isOn;
                     ledreqs[2] = 1;
                     break;
             }
@@ -526,15 +524,15 @@ class AppFuncs{
         if(data.ipAddr === "2001:db8::1e00:3800:1357:3346"){
             switch (data.ledType){
                 case "red":
-                    leds[3] = ~~!leds[3];
+                    leds[3] = data.isOn;
                     ledreqs[3] = 1;
                     break;
-                case "green":
-                    leds[4] = ~~!leds[4];
+                case "orange":
+                    leds[4] = data.isOn;
                     ledreqs[4] = 1;
                     break;
-                case "orange":
-                    leds[5] = ~~!leds[5];
+                case "green":
+                    leds[5] = data.isOn;
                     ledreqs[5] = 1;
                     break;
             }
